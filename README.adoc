@@ -1,0 +1,183 @@
+Startup and shutdown AWS RDS with Lambda
+========================================
+
+Welcome to your CDK TypeScript project!
+
+This is a blank project for TypeScript development with CDK.
+
+The `cdk.json` file tells the CDK Toolkit how to execute your app.
+
+- Useful commands
+
+ ** `npm run build`   compile typescript to js
+ ** `npm run watch`   watch for changes and compile
+ ** `npm run test`    perform the jest unit tests
+ ** `cdk deploy`      deploy this stack to your default AWS account/region
+ ** `cdk diff`        compare deployed stack with current state
+ ** `cdk synth`       emits the synthesized CloudFormation template
+
+- Create a MySQL database
+
+[console.source]
+----
+𝜆 aws rds create-db-instance --profile personal --db-instance-identifier testdb --db-instance-class db.t2.micro --engine mysql --allocated-storage 20 --master-username admin --master-user-password adminPwd
+----
+
+- Setup S3 Bucket
+
+[console.source]
+----
+𝜆 aws s3 mb --profile personal s3://auto-aws-db-shutdown-deployment-artifacts-bucket
+----
+
+- Test startup remote AWS RDS with Lambda function locally
+
+[console.source]
+----
+𝜆 sam local invoke --profile personal --no-event DBShutDownFunction
+Invoking app.lambdaHandler (nodejs12.x)
+
+Fetching lambci/lambda:nodejs12.x Docker container image......
+Mounting /Users/terrence/tmp/automatic-aws-db-shutdown/shutdown as /var/task:ro,delegated inside runtime container
+START RequestId: 8bdaa279-ebcf-1d90-3888-989318612005 Version: $LATEST
+END RequestId: 8bdaa279-ebcf-1d90-3888-989318612005
+REPORT RequestId: 8bdaa279-ebcf-1d90-3888-989318612005	Init Duration: 218.07 ms	Duration: 371.26 ms	Billed Duration: 400 ms	Memory Size: 128 MB	Max Memory Used: 59 MB
+
+{"statusCode":200,"body":{"ResponseMetadata":{"RequestId":"bf5a0ae8-5334-4307-bddb-ad0bcaf30e53"},"DBInstance":{"DBInstanceIdentifier":"testdb","DBInstanceClass":"db.t2.micro","Engine":"mysql","DBInstanceStatus":"stopping","MasterUsername":"admin","Endpoint":{"Address":"testdb.c4p2iv5uanmr.ap-southeast-2.rds.amazonaws.com","Port":3306,"HostedZoneId":"Z32T0VRHXEXS0V"},"AllocatedStorage":20,"InstanceCreateTime":"2020-02-22T00:33:54.125Z","PreferredBackupWindow":"14:42-15:12","BackupRetentionPeriod":10,"DBSecurityGroups":[],"VpcSecurityGroups":[{"VpcSecurityGroupId":"sg-45a54e3a","Status":"active"}],"DBParameterGroups":[{"DBParameterGroupName":"default.mysql5.7","ParameterApplyStatus":"in-sync"}],"AvailabilityZone":"ap-southeast-2b","DBSubnetGroup":{"DBSubnetGroupName":"default","DBSubnetGroupDescription":"default","VpcId":"vpc-c7331aa0","SubnetGroupStatus":"Complete","Subnets":[{"SubnetIdentifier":"subnet-a53c2dc2","SubnetAvailabilityZone":{"Name":"ap-southeast-2a"},"SubnetStatus":"Active"},{"SubnetIdentifier":"subnet-ea6361a3","SubnetAvailabilityZone":{"Name":"ap-southeast-2b"},"SubnetStatus":"Active"},{"SubnetIdentifier":"subnet-5d0a8a05","SubnetAvailabilityZone":{"Name":"ap-southeast-2c"},"SubnetStatus":"Active"}]},"PreferredMaintenanceWindow":"sat:14:04-sat:14:34","PendingModifiedValues":{},"LatestRestorableTime":"2020-02-22T02:10:00.000Z","MultiAZ":false,"EngineVersion":"5.7.22","AutoMinorVersionUpgrade":true,"ReadReplicaDBInstanceIdentifiers":[],"ReadReplicaDBClusterIdentifiers":[],"LicenseModel":"general-public-license","OptionGroupMemberships":[{"OptionGroupName":"default:mysql-5-7","Status":"in-sync"}],"PubliclyAccessible":true,"StatusInfos":[],"StorageType":"gp2","DbInstancePort":0,"StorageEncrypted":false,"DbiResourceId":"db-S7WTUCM2GN4TESVM5ZCBBQZCUE","CACertificateIdentifier":"rds-ca-2019","DomainMemberships":[],"CopyTagsToSnapshot":false,"MonitoringInterval":0,"DBInstanceArn":"arn:aws:rds:ap-southeast-2:123456789012:db:testdb","IAMDatabaseAuthenticationEnabled":false,"PerformanceInsightsEnabled":false,"EnabledCloudwatchLogsExports":[],"ProcessorFeatures":[],"DeletionProtection":false,"AssociatedRoles":[]}}}
+----
+
+- Test shutdown remote AWS RDS with Lambda function locally
+
+[console.source]
+----
+𝜆 sam local invoke --profile personal --no-event DBStartUpFunction
+Invoking app.lambdaHandler (nodejs12.x)
+
+Fetching lambci/lambda:nodejs12.x Docker container image......
+Mounting /Users/terrence/tmp/automatic-aws-db-shutdown/startup as /var/task:ro,delegated inside runtime container
+START RequestId: 5de4dd12-7003-13e7-97c8-0b1dcbf8fb09 Version: $LATEST
+END RequestId: 5de4dd12-7003-13e7-97c8-0b1dcbf8fb09
+REPORT RequestId: 5de4dd12-7003-13e7-97c8-0b1dcbf8fb09	Init Duration: 215.72 ms	Duration: 515.23 ms	Billed Duration: 600 ms	Memory Size: 128 MB	Max Memory Used: 58 MB
+
+{"statusCode":200,"body":{"ResponseMetadata":{"RequestId":"8352387b-3229-4263-86c8-27b123805720"},"DBInstance":{"DBInstanceIdentifier":"testdb","DBInstanceClass":"db.t2.micro","Engine":"mysql","DBInstanceStatus":"starting","MasterUsername":"admin","Endpoint":{"Address":"testdb.c4p2iv5uanmr.ap-southeast-2.rds.amazonaws.com","Port":3306,"HostedZoneId":"Z32T0VRHXEXS0V"},"AllocatedStorage":20,"InstanceCreateTime":"2020-02-22T00:33:54.125Z","PreferredBackupWindow":"14:42-15:12","BackupRetentionPeriod":10,"DBSecurityGroups":[],"VpcSecurityGroups":[{"VpcSecurityGroupId":"sg-45a54e3a","Status":"active"}],"DBParameterGroups":[{"DBParameterGroupName":"default.mysql5.7","ParameterApplyStatus":"in-sync"}],"AvailabilityZone":"ap-southeast-2b","DBSubnetGroup":{"DBSubnetGroupName":"default","DBSubnetGroupDescription":"default","VpcId":"vpc-c7331aa0","SubnetGroupStatus":"Complete","Subnets":[{"SubnetIdentifier":"subnet-a53c2dc2","SubnetAvailabilityZone":{"Name":"ap-southeast-2a"},"SubnetStatus":"Active"},{"SubnetIdentifier":"subnet-ea6361a3","SubnetAvailabilityZone":{"Name":"ap-southeast-2b"},"SubnetStatus":"Active"},{"SubnetIdentifier":"subnet-5d0a8a05","SubnetAvailabilityZone":{"Name":"ap-southeast-2c"},"SubnetStatus":"Active"}]},"PreferredMaintenanceWindow":"sat:14:04-sat:14:34","PendingModifiedValues":{},"LatestRestorableTime":"2020-02-22T02:10:00.000Z","MultiAZ":false,"EngineVersion":"5.7.22","AutoMinorVersionUpgrade":true,"ReadReplicaDBInstanceIdentifiers":[],"ReadReplicaDBClusterIdentifiers":[],"LicenseModel":"general-public-license","OptionGroupMemberships":[{"OptionGroupName":"default:mysql-5-7","Status":"in-sync"}],"PubliclyAccessible":true,"StatusInfos":[],"StorageType":"gp2","DbInstancePort":0,"StorageEncrypted":false,"DbiResourceId":"db-S7WTUCM2GN4TESVM5ZCBBQZCUE","CACertificateIdentifier":"rds-ca-2019","DomainMemberships":[],"CopyTagsToSnapshot":false,"MonitoringInterval":0,"DBInstanceArn":"arn:aws:rds:ap-southeast-2:123456789012:db:testdb","IAMDatabaseAuthenticationEnabled":false,"PerformanceInsightsEnabled":false,"EnabledCloudwatchLogsExports":[],"ProcessorFeatures":[],"DeletionProtection":false,"AssociatedRoles":[]}}}
+----
+
+- Pack AWS Lambda functions
+
+[console.source]
+----
+𝜆 sam package --profile personal --template-file template.yaml --s3-bucket auto-aws-db-shutdown-deployment-artifacts-bucket --output-template-file db-startup-shutdown-lambda.template
+Uploading to ce5a18943bd319014d6e8c1bd3be393e  596 / 596.0  (100.00%)
+Uploading to d31b171ea79cbf6bca71eeb99f1acfaf  598 / 598.0  (100.00%)
+
+Successfully packaged artifacts and wrote output template to file db-startup-shutdown-lambda.template.
+Execute the following command to deploy the packaged template
+sam deploy --template-file /Users/terrence/tmp/automatic-aws-db-shutdown/db-startup-shutdown-lambda.template --stack-name <YOUR STACK NAME>
+----
+
+- Deploy AWS Lambda functions
+
+[console.source]
+----
+𝜆 sam deploy --profile personal --template-file db-startup-shutdown-lambda.template --stack-name auto-db-shutdown-stack --capabilities CAPABILITY_IAM
+
+	Deploying with following values
+	===============================
+	Stack name                 : auto-db-shutdown-stack
+	Region                     : None
+	Confirm changeset          : False
+	Deployment s3 bucket       : None
+	Capabilities               : ["CAPABILITY_IAM"]
+	Parameter overrides        : {}
+
+Initiating deployment
+=====================
+
+Waiting for changeset to be created..
+
+CloudFormation stack changeset
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Operation                                                                       LogicalResourceId                                                               ResourceType
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
++ Add                                                                           DBFunctionsDeadLetterTopic                                                      AWS::SNS::Topic
++ Add                                                                           DBShutDownFunctionRole                                                          AWS::IAM::Role
++ Add                                                                           DBShutDownFunctionSchedule1Permission                                           AWS::Lambda::Permission
++ Add                                                                           DBShutDownFunctionSchedule1                                                     AWS::Events::Rule
++ Add                                                                           DBShutDownFunction                                                              AWS::Lambda::Function
++ Add                                                                           DBStartUpFunctionRole                                                           AWS::IAM::Role
++ Add                                                                           DBStartUpFunctionSchedule1Permission                                            AWS::Lambda::Permission
++ Add                                                                           DBStartUpFunctionSchedule1                                                      AWS::Events::Rule
++ Add                                                                           DBStartUpFunction                                                               AWS::Lambda::Function
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Changeset created successfully. arn:aws:cloudformation:ap-southeast-2:123456789012:changeSet/samcli-deploy1582338571/8099c305-e102-40b7-9cbe-14a2ab2690a7
+
+
+2020-02-22 13:29:37 - Waiting for stack create/update to complete
+
+CloudFormation events from changeset
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ResourceStatus                                              ResourceType                                                LogicalResourceId                                           ResourceStatusReason
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+CREATE_IN_PROGRESS                                          AWS::SNS::Topic                                             DBFunctionsDeadLetterTopic                                  Resource creation Initiated
+CREATE_COMPLETE                                             AWS::SNS::Topic                                             DBFunctionsDeadLetterTopic                                  -
+CREATE_IN_PROGRESS                                          AWS::IAM::Role                                              DBStartUpFunctionRole                                       Resource creation Initiated
+CREATE_IN_PROGRESS                                          AWS::IAM::Role                                              DBShutDownFunctionRole                                      Resource creation Initiated
+CREATE_COMPLETE                                             AWS::IAM::Role                                              DBShutDownFunctionRole                                      -
+CREATE_COMPLETE                                             AWS::IAM::Role                                              DBStartUpFunctionRole                                       -
+CREATE_IN_PROGRESS                                          AWS::Lambda::Function                                       DBShutDownFunction                                          Resource creation Initiated
+CREATE_IN_PROGRESS                                          AWS::Lambda::Function                                       DBStartUpFunction                                           Resource creation Initiated
+CREATE_COMPLETE                                             AWS::Lambda::Function                                       DBShutDownFunction                                          -
+CREATE_COMPLETE                                             AWS::Lambda::Function                                       DBStartUpFunction                                           -
+CREATE_IN_PROGRESS                                          AWS::Events::Rule                                           DBShutDownFunctionSchedule1                                 Resource creation Initiated
+CREATE_IN_PROGRESS                                          AWS::Events::Rule                                           DBStartUpFunctionSchedule1                                  Resource creation Initiated
+CREATE_COMPLETE                                             AWS::Events::Rule                                           DBShutDownFunctionSchedule1                                 -
+CREATE_COMPLETE                                             AWS::Events::Rule                                           DBStartUpFunctionSchedule1                                  -
+CREATE_IN_PROGRESS                                          AWS::Lambda::Permission                                     DBShutDownFunctionSchedule1Permission                       Resource creation Initiated
+CREATE_IN_PROGRESS                                          AWS::Lambda::Permission                                     DBStartUpFunctionSchedule1Permission                        Resource creation Initiated
+CREATE_COMPLETE                                             AWS::Lambda::Permission                                     DBShutDownFunctionSchedule1Permission                       -
+CREATE_COMPLETE                                             AWS::Lambda::Permission                                     DBStartUpFunctionSchedule1Permission                        -
+CREATE_COMPLETE                                             AWS::CloudFormation::Stack                                  auto-db-shutdown-stack                                      -
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Successfully created/updated stack - auto-db-shutdown-stack in None
+----
+
+- Cleanup
+
+[console.source]
+----
+𝜆 aws cloudformation delete-stack --profile personal --stack-name auto-db-shutdown-stack
+
+𝜆 aws rds delete-db-instance --profile personal --db-instance-identifier testdb --skip-final-snapshot
+
+𝜆 aws s3 rb --profile personal s3://auto-aws-db-shutdown-deployment-artifacts-bucket --force
+----
+
+- Settings
+
+** Project name: `db-startup-shutdown-lambda`
+** Code Pipeline name: `db-startup-shutdown-lambda-pipeline`
+** Code Pipeline role: `AWSCodePipelineServiceRole-db-startup-shutdown-lambda`
+** Code Build role: `codebuild-db-startup-shutdown-lambda-service-role`
+** Code Build policy: `codebuild-db-startup-shutdown-lambda-service-policy`
+** Cloudformation role: `cfn-db-startup-shutdown-lambda-pipeline-role`
+** Cloudformation policy: `cfn-db-startup-shutdown-lambda-pipeline-policy`
+** Cloudformation stack name: `db-startup-shutdown-lambda-stack`
+** Cloudformation changeset name: `db-startup-shutdown-lambda-changeset`
+
+References
+----------
+
+- Saving money by automatically shutting down RDS instances using AWS Lambda and AWS SAM, _https://medium.com/hatchsoftware/saving-money-by-automatically-shutting-down-rds-instances-using-aws-lambda-and-aws-sam-925fd86592b5_
+- Setting up CI/CD for Lambda Functions using AWS CodePipeline, _https://medium.com/hatchsoftware/setting-up-ci-cd-for-lambda-functions-using-aws-codepipeline-880567769dde_
+- Using the AWS CDK to build scheduled Lambda Functions, _https://medium.com/hatchsoftware/using-the-aws-cdk-to-build-scheduled-lambda-functions-13eb1674586e_
+
+- AWS CDK setup for autoscaling with ec2 spot instances, _https://jelinden.fi/blog/aws-cdk-setup-for-autoscaling-with-ec2-spot-instances/xi7mNppZg_
+
+- AWS CDK Part 1: How to create a custom VPC, _https://github.com/TerrenceMiao/db-startup-shutdown-lambda.git_
+- AWS CDK Part 2: How to create an S3 Bucket, _https://blog.codecentric.de/en/2019/10/aws-cdk-part-2-s3-bucket/_
+- AWS CDK Part 3: How to create an RDS instance, _https://blog.codecentric.de/en/2019/11/aws-cdk-part-3-how-to-create-an-rds-instance/_
+- AWS CDK Part 4: How to create Lambdas, _https://blog.codecentric.de/en/2019/11/aws-cdk-part-4-create-lambdas/_
+- AWS CDK Part 5: How to create a step function, _https://blog.codecentric.de/en/2019/11/aws-cdk-part-5-create-step-functions/_
+- AWS CDK Part 6: Lessons learned, _https://blog.codecentric.de/en/2019/11/aws-cdk-part-6-lessons-learned/_

@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Automatic database shut down and start up Lambda functions
+Parameters:
+  MySQLInstanceID:
+    Type: String
+    Default: db-startup-shutdown-lambda-mysql
+  MySQLInstanceARN:
+    Type: String
+    Default: arn:aws:rds:ap-southeast-2:004385754915:db:db-startup-shutdown-lambda-mysql
+  PostgreSQLInstanceID:
+    Type: String
+    Default: db-startup-shutdown-lambda-postgresql
+  PostgreSQLInstanceARN:
+    Type: String
+    Default: arn:aws:rds:ap-southeast-2:004385754915:db:db-startup-shutdown-lambda-postgresql
+Globals:
+  Function:
+    MemorySize: 128
+    Timeout: 3
+    Handler: app.lambdaHandler
+    Runtime: nodejs12.x
+    Environment:
+      Variables:
+        MYSQL_INSTANCE_IDENTIFIER: !Ref MySQLInstanceID
+        POSTGRESQL_INSTANCE_IDENTIFIER: !Ref PostgreSQLInstanceID
+Resources:
+  DBShutDownFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: shutdown/
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - rds:StopDBInstance
+              Resource:
+                - !Ref MySQLInstanceARN
+                - !Ref PostgreSQLInstanceARN
+      Events:
+        Schedule1:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 17 ? * MON-FRI *)
+      DeadLetterQueue:
+        Type: SNS
+        TargetArn: !Ref DBFunctionsDeadLetterTopic
+  DBStartUpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: startup/
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - rds:StartDBInstance
+              Resource:
+                - !Ref MySQLInstanceARN
+                - !Ref PostgreSQLInstanceARN
+      Events:
+        Schedule1:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 5 ? * MON-FRI *)
+      DeadLetterQueue:
+        Type: SNS
+        TargetArn: !Ref DBFunctionsDeadLetterTopic
+  DBFunctionsDeadLetterTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint: terrence.miao@auspost.com.au
+          Protocol: email

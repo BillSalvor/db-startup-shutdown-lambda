@@ -1,0 +1,3 @@
+{
+  "app": "npx ts-node bin/db-startup-shutdown-lambda.ts"
+}

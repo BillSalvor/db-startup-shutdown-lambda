@@ -1,0 +1,6 @@
+{
+  "@aws-cdk/core:enableStackNameDuplicates": "true",
+  "aws-cdk:enableDiffNoFail": "true",
+  "ssm:account=004385754915:parameterName=/db-startup-shutdown-lambda/github/repo:region=ap-southeast-2": "db-startup-shutdown-lambda",
+  "ssm:account=004385754915:parameterName=/db-startup-shutdown-lambda/github/owner:region=ap-southeast-2": "TerrenceMiao"
+}
