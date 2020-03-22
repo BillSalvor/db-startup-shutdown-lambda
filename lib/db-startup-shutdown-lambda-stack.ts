@@ -23,12 +23,12 @@ export class DbStartupShutdownLambdaStack extends Stack {
     this.shutdownLambdaCode = Code.fromCfnParameters();
     this.buildEventTriggeredLambdaFunction("DBShutDown",
       props.mysqlInstanceId, props.mysqlInstanceARN, props.postgresqlInstanceId, props.postgresqlInstanceARN,
-      "rds:StopDBInstance", "0 20 ? * MON-FRI *", this.shutdownLambdaCode);
+      "rds:StopDBInstance", "0 23 ? * MON-SUN *", this.shutdownLambdaCode);
 
     this.startupLambdaCode = Code.fromCfnParameters();
     this.buildEventTriggeredLambdaFunction("DBStartUp",
       props.mysqlInstanceId, props.mysqlInstanceARN, props.postgresqlInstanceId, props.postgresqlInstanceARN,
-      "rds:StartDBInstance", "0 8 ? * MON-FRI *", this.startupLambdaCode);
+      "rds:StartDBInstance", "0 1 ? * MON-SUN *", this.startupLambdaCode);
   }
 
   private buildEventTriggeredLambdaFunction(name: string,
